@@ -8,16 +8,30 @@ namespace annoying_quotes_bot;
 public static class Program
 {
     private static TwitchClient Client { get; set; } = new TwitchClient();
+    private static Random R = new Random();
     static async Task Main(string[] args)
     {
         Client.Initialize(new ConnectionCredentials(Config.BotUsername, Config.AccessToken), Config.Channel);
         Client.Connect();
         Client.OnConnected += (s, e) => Console.WriteLine($"Connected as {e.BotUsername}");
         Client.OnJoinedChannel += (s, e) => Console.WriteLine($"Joined {e.Channel}");
+        Client.OnRitualNewChatter += Client_OnRitualNewChatter;
         await DoStuff();
         Start();
 
         Console.Read();
+    }
+
+    private static async void Client_OnRitualNewChatter(object? sender, TwitchLib.Client.Events.OnRitualNewChatterArgs e)
+    {
+        HttpClient c = new HttpClient();
+        c.Timeout = TimeSpan.FromSeconds(2);
+
+        Stream apiResponse = await c.GetStreamAsync($"http://api.alquran.cloud/ayah/{R.Next(6237)}/editions/en.pickthall");
+        QuranVerse v = (await JsonSerializer.DeserializeAsync<QuranVerse>(apiResponse))!;
+
+        string verseLine = $"@{e.RitualNewChatter.DisplayName}, {v.Data[0].Surah.EnglishName} {{{v.Data[0].Surah.Number}}} -- {v.Data[0].Text}";
+        Client.SendMessage(Config.Channel, verseLine[..499]);
     }
 
     public static void Start()
@@ -60,6 +74,32 @@ public class TMI
 public class Chatters
 {
     public List<string> viewers { get; set; }
+}
+
+
+public class Datum
+{
+    [JsonPropertyName("text")]
+    public string Text { get; set; }
+
+    [JsonPropertyName("surah")]
+    public Surah Surah { get; set; }
+}
+
+
+public class QuranVerse
+{
+    [JsonPropertyName("data")]
+    public Datum[] Data { get; set; }
+}
+
+public class Surah
+{
+    [JsonPropertyName("number")]
+    public int Number { get; set; }
+
+    [JsonPropertyName("englishName")]
+    public string EnglishName { get; set; }
 }
 
 
