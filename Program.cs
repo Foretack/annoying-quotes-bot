@@ -31,7 +31,7 @@ public static class Program
         QuranVerse v = (await JsonSerializer.DeserializeAsync<QuranVerse>(apiResponse))!;
 
         string verseLine = $"@{e.RitualNewChatter.DisplayName}, {v.Data[0].Surah.EnglishName} {{{v.Data[0].Surah.Number}}} -- {v.Data[0].Text}";
-        Client.SendMessage(Config.Channel, verseLine[..499]);
+        Client.SendMessage(Config.Channel, verseLine.Length >= 490 ?  verseLine[..475] : verseLine);
     }
 
     public static void Start()
