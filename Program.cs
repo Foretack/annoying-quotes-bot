@@ -15,24 +15,27 @@ public static class Program
         Client.Connect();
         Client.OnConnected += (s, e) => Console.WriteLine($"Connected as {e.BotUsername}");
         Client.OnJoinedChannel += (s, e) => Console.WriteLine($"Joined {e.Channel}");
-        Client.OnRitualNewChatter += Client_OnRitualNewChatter;
+        Client.OnMessageReceived += Client_OnMessageReceived;
         await DoStuff();
         Start();
 
         Console.Read();
     }
 
-    private static async void Client_OnRitualNewChatter(object? sender, TwitchLib.Client.Events.OnRitualNewChatterArgs e)
+    private static async void Client_OnMessageReceived(object? sender, TwitchLib.Client.Events.OnMessageReceivedArgs e)
     {
-        HttpClient c = new HttpClient();
-        c.Timeout = TimeSpan.FromSeconds(2);
+        if (e.ChatMessage.RawIrcMessage.Contains("first-msg=1"))
+        {
+            HttpClient c = new HttpClient();
+            c.Timeout = TimeSpan.FromSeconds(2);
 
-        Stream apiResponse = await c.GetStreamAsync($"http://api.alquran.cloud/ayah/{R.Next(6237)}/editions/en.pickthall");
-        QuranVerse v = (await JsonSerializer.DeserializeAsync<QuranVerse>(apiResponse))!;
+            Stream apiResponse = await c.GetStreamAsync($"http://api.alquran.cloud/ayah/{R.Next(6237)}/editions/en.pickthall");
+            QuranVerse v = (await JsonSerializer.DeserializeAsync<QuranVerse>(apiResponse))!;
 
-        Console.WriteLine($"new chatter {e.RitualNewChatter.DisplayName} - {v.Data[0].Text}");
-        string verseLine = $"@{e.RitualNewChatter.DisplayName}, {v.Data[0].Surah.EnglishName} {{{v.Data[0].Surah.Number}}} -- {v.Data[0].Text}";
-        Client.SendMessage(Config.Channel, verseLine.Length >= 490 ?  verseLine[..475] : verseLine);
+            Console.WriteLine($"new chatter {e.ChatMessage.DisplayName} - {v.Data[0].Text}");
+            string verseLine = $"@{e.ChatMessage.DisplayName}, {v.Data[0].Surah.EnglishName} {{{v.Data[0].Surah.Number}}} -- {v.Data[0].Text}";
+            Client.SendMessage(Config.Channel, verseLine.Length >= 490 ? verseLine[..475] : verseLine);
+        }
     }
 
     public static void Start()
