@@ -29,12 +29,17 @@ public static class Program
             HttpClient c = new HttpClient();
             c.Timeout = TimeSpan.FromSeconds(2);
 
-            Stream apiResponse = await c.GetStreamAsync($"http://api.alquran.cloud/ayah/{R.Next(6237)}/editions/en.pickthall");
-            QuranVerse v = (await JsonSerializer.DeserializeAsync<QuranVerse>(apiResponse))!;
-
-            Console.WriteLine($"new chatter {e.ChatMessage.DisplayName} - {v.Data[0].Text}");
-            string verseLine = $"@{e.ChatMessage.DisplayName}, {v.Data[0].Surah.EnglishName} {{{v.Data[0].Surah.Number}}} -- {v.Data[0].Text}";
-            Client.SendMessage(Config.Channel, verseLine.Length >= 490 ? verseLine[..475] : verseLine);
+            try
+            {
+                Stream apiResponse = await c.GetStreamAsync($"http://api.alquran.cloud/ayah/{R.Next(6237)}/editions/en.pickthall");
+                QuranVerse v = (await JsonSerializer.DeserializeAsync<QuranVerse>(apiResponse))!;
+                string verseLine = $"@{e.ChatMessage.DisplayName}, {v.Data[0].Surah.EnglishName} {{{v.Data[0].Surah.Number}}} -- {v.Data[0].Text}";
+                Client.SendMessage(Config.Channel, verseLine.Length >= 490 ? verseLine[..475] : verseLine);
+            }
+            catch (TimeoutException)
+            {
+                return;
+            }
         }
     }
 
